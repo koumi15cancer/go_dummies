@@ -109,3 +109,40 @@ func (s *Storage) DeleteProject(id string) error {
 
 	return nil
 }
+
+// Task Repository
+
+func (s *Storage) CreateTask(t *Task) (*Task, error) {
+	result, err := s.db.Exec("INSERT into Tasks (name, status, project_id, assigned_to) VALUES(?,?,?,?,?)",
+		t.Name, t.Status, t.ProjectID, t.AssignedToID
+		)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve last insert ID: %w", err)
+	}
+
+	t.ID = id
+	return t, nil
+
+}
+
+func (s *Storage) GetTask(id string) (*Task, error) {
+	var t Task
+	err := s.db.Exec("SELECT id, name, status, project_id, assigned_to, createdAt FROM tasks WHERE id = ?", id).
+	.Scan(&t.ID, &t.Name, &t.Status, &t.ProjectID, &t.AssignedToID, &t.CreatedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("task with id %s not found", id)
+		}
+		return nil, err
+	}
+
+	return &t, nil
+
+}
