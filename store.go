@@ -15,12 +15,12 @@ type Store interface {
 	GetUserById(id string) (*User, error)
 
 	// Projects
-	CreateProject(p *Project) error
+	CreateProject(p *Project) (*Project, error)
 	GetProject(id string) (*Project, error)
 	DeleteProject(id string) error
 
 	// Tasks
-	CreateTask(id string) (*Task, error)
+	CreateTask(t *Task) (*Task, error)
 	GetTask(id string) (*Task, error)
 }
 
@@ -65,7 +65,7 @@ func (s *Storage) GetUserById(id string) (*User, error) {
 // Project Repository
 
 func (s *Storage) CreateProject(p *Project) (*Project, error) {
-	result, err := s.db.Exec("INSERT into Project(name) values (?)", p.name)
+	result, err := s.db.Exec("INSERT into Project(name) values (?)", p.Name)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -84,7 +84,7 @@ func (s *Storage) CreateProject(p *Project) (*Project, error) {
 func (s *Storage) GetProject(id string) (*Project, error) {
 	var p Project
 	err := s.db.QueryRow("SELECT id, name, createdAt FROM projects WHERE id = ?", id).
-		Scan(&p.ID, &p.name, &p.CreatedAt)
+		Scan(&p.ID, &p.Name, &p.CreatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -114,8 +114,7 @@ func (s *Storage) DeleteProject(id string) error {
 
 func (s *Storage) CreateTask(t *Task) (*Task, error) {
 	result, err := s.db.Exec("INSERT into Tasks (name, status, project_id, assigned_to) VALUES(?,?,?,?,?)",
-		t.Name, t.Status, t.ProjectID, t.AssignedToID
-		)
+		t.Name, t.Status, t.ProjectID, t.AssignedToID)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -133,8 +132,8 @@ func (s *Storage) CreateTask(t *Task) (*Task, error) {
 
 func (s *Storage) GetTask(id string) (*Task, error) {
 	var t Task
-	err := s.db.Exec("SELECT id, name, status, project_id, assigned_to, createdAt FROM tasks WHERE id = ?", id).
-	.Scan(&t.ID, &t.Name, &t.Status, &t.ProjectID, &t.AssignedToID, &t.CreatedAt)
+	err := s.db.QueryRow("SELECT id, name, status, project_id, assigned_to, createdAt FROM tasks WHERE id = ?", id).
+		Scan(&t.ID, &t.Name, &t.Status, &t.ProjectID, &t.AssignedToID, &t.CreatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

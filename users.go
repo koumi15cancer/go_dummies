@@ -5,12 +5,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-var errEmailRequired = errors.New("Email is required")
-var errFirstNameRequired = errors.New("First Name is required")
-var errLastNameRequired = errors.New("Last Name is required")
-var errPasswordRequired = errors.New("Password is required")
+var errEmailRequired = errors.New("email is required")
+var errFirstNameRequired = errors.New("first name is required")
+var errLastNameRequired = errors.New("last name is required")
+var errPasswordRequired = errors.New("password is required")
 
 type UserService struct {
 	store Store
@@ -21,6 +23,7 @@ func NewUserService(s Store) *UserService {
 }
 
 func (s *UserService) RegisterRoutes(r *mux.Router) {
+	// Updated path to register the route under "/api/v1"
 	r.HandleFunc("/user/register", s.handleUserRegister).Methods("POST")
 	r.HandleFunc("/user/login", s.handleUserLogin).Methods("POST")
 }
@@ -41,12 +44,12 @@ func (s *UserService) handleUserRegister(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err != validateUserPayload(payload); err != nil {
+	if err := validateUserPayLoad(payload); err != nil {
 		WriteJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	hashedPassowrd, err := HashPassword(payload.Password)
+	hashedPassword, err := HashPassword(payload.Password)
 
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Error creating user"})
@@ -54,7 +57,7 @@ func (s *UserService) handleUserRegister(w http.ResponseWriter, r *http.Request)
 	}
 	payload.Password = hashedPassword
 
-	u, err  := s.store.CreateUser(payload)
+	u, err := s.store.CreateUser(payload)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Error creating user"})
 		return
@@ -71,11 +74,14 @@ func (s *UserService) handleUserRegister(w http.ResponseWriter, r *http.Request)
 
 }
 
-func (s *UserService) handleUserLogin {
-
+func (s *UserService) handleUserLogin(w http.ResponseWriter, r *http.Request) {
+	// 1. Find user in db by email
+	// 2. Compare password with hashed password
+	// 3. Create JWT and set it in a cookie
+	// 4. Return JWT in response
 }
 
-func validateUserPayLoad(user *User) error{
+func validateUserPayLoad(user *User) error {
 	if user.Email == "" {
 		return errEmailRequired
 	}
@@ -88,7 +94,7 @@ func validateUserPayLoad(user *User) error{
 		return errLastNameRequired
 	}
 
-	if user.EmPasswordail == "" {
+	if user.Password == "" {
 		return errPasswordRequired
 	}
 
@@ -108,6 +114,5 @@ func createAndSetAuthCookie(userID int64, w http.ResponseWriter) (string, error)
 	})
 
 	return token, nil
-
 
 }
